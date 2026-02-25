@@ -1,10 +1,13 @@
 import polars as pl
+import consts_proj
+import consts_proj
 
-lazy_df = pl.scan_ndjson("s3://sparkresultsjjjmain/the-pile/bronze/00.jsonl")
-
-transformed_df = lazy_df.select(
-    pl.col("text"),
-    pl.col("meta").struct.field("pile_set_name").alias("pile_set_name")
+lazy_df = pl.scan_ndjson(
+    consts_proj.BUCKET_BRONZE_TGT,
+    schema={
+        "text" : pl.String(), 
+        "meta" : pl.Struct({"pile_set_name": pl.String()}) 
+    }
 )
 
-transformed_df.sink_parquet("s3://sparkresultsjjjmain/silver/00.parquet")
+lazy_df.sink_parquet(consts_proj.BUCKET_SILVER_TGT)

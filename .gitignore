@@ -217,3 +217,15 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+/data
+csv*
+kaggle.json
+readparquet.py
+.terraform*
+*.pem
+*/certs/*
+*/build/*
+*.tfstate*
+*_WIN*
+*.pyc

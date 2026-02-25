@@ -1,37 +1,38 @@
-from pyspark.sql import SparkSession, DataFrame
-import os
+import polars as pl
+import numpy as np
+import s3fs
+import consts_proj
 
-from pyspark.sql.functions import col, length
-from pyspark.sql.types import StructType, StructField, StringType, LongType
-
-
-
-def transform_df(df: DataFrame) -> DataFrame:
-    df = df.filter(length(col("text")) > 100)\
-       .where(~col('text').contains('copyright'))\
-       .withColumn('set_name', col("meta.pile_set_name"))\
-       .drop('meta')
+def transform_df(df: pl.DataFrame) -> pl.DataFrame:
+    df = df.filter((pl.col("text").str.len_chars() > 100) & (~pl.col("text").str.contains('copyright')))\
+        .with_columns(set_name = pl.col("meta").struct.field("pile_set_name"))
+    df = df.drop('meta')
     return df
 
+
 if __name__ == "__main__":
-    spark = SparkSession.builder \
-        .appName("EMR_spark") \
-        .getOrCreate()
+    fs = s3fs.S3FileSystem()
 
-    spark.sparkContext.setLogLevel("WARN")
+    if fs.exists(consts_proj.BUCKET_GOLD_TGT):
+        fs.rm(consts_proj.BUCKET_GOLD_TGT, recursive=True)
 
-    df = spark.read.parquet("s3://sparkresultsjjjmain/silver/00.parquet")
-
+    df = pl.read_parquet(consts_proj.BUCKET_SILVER_TGT).collect()
     df = transform_df(df)
 
-    df.write \
-    .partitionBy("set_name") \
-    .mode("overwrite") \
-    .option("compression", "snappy") \
-    .parquet("s3://sparkresultsjjjmain/gold/")
+    taille_totale_mb = df.estimated_size("mb")
 
-    spark.stop()
+    # 500 Mo en RAM = ~128Mo en disque
+    nb_partitions = max(1, int(taille_totale_gb / 500))
 
+    df = df.with_columns(
+        _partition_idx = (pl.arange(0, pl.count()) % nb_partitions)
+    )
 
-
-
+    df.write_parquet(
+        consts_proj.BUCKET_GOLD_TGT,
+        use_pyarrow=True,
+        pyarrow_options={
+            "partition_cols": ["_partition_idx"],
+            "compression": "snappy",
+        }
+    )
