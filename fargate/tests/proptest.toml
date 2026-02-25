@@ -1,0 +1,12 @@
+# Proptest configuration for property-based testing
+# This ensures all property tests run at least 100 iterations
+
+[proptest]
+# Minimum number of test cases to generate per property test
+cases = 100
+
+# Maximum number of shrinking iterations when a test fails
+max_shrink_iters = 1000
+
+# Timeout for each test case in milliseconds (10 seconds)
+timeout = 10000

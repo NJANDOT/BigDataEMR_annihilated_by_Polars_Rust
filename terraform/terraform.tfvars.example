@@ -1,0 +1,44 @@
+# AWS Configuration
+# aws_region = "eu-west-3"
+
+# S3 Configuration
+# s3_bucket_name   = "your-bucket-name"
+# s3_scripts_prefix = "src"
+# s3_logs_prefix    = "logs"
+
+# Project Configuration
+# project_name = "emr-project"
+# environment  = "dev"
+
+# ECR Configuration
+# ecr_repository_name = "emr_fine"
+# ecr_image_tag       = "latest"
+
+# VPC Configuration
+# vpc_cidr             = "10.0.0.0/16"
+# availability_zones   = ["eu-west-3a"]
+# public_subnet_cidrs  = ["10.0.0.0/24"]
+# private_subnet_cidrs = ["10.0.1.0/24"]
+
+# ECS Configuration
+# ecs_cluster_name           = "emr-prep-cluster"
+# ecs_task_cpu               = "16384"   # 16 vCPU (1 vCPU = 1024 units)
+# ecs_task_memory            = "122880"  # 120 GB in MB
+# ecs_ephemeral_storage_gb   = 200
+# cloudwatch_log_retention_days = 14
+
+# KMS Configuration
+# kms_deletion_window_days = 7
+# kms_key_id = null  # Laissez null pour créer une nouvelle clé, ou spécifiez l'ID d'une clé existante
+
+# EMR Serverless Configuration
+# emr_release_label = "emr-7.1.0"
+# emr_max_cpu       = "96 vCPU"
+# emr_max_memory    = "384 GB"
+# emr_max_disk      = "2000 GB"
+
+# Spark Configuration
+# spark_executor_cores           = "4"
+# spark_executor_memory          = "24g"
+# spark_executor_memory_overhead = "6g"
+# spark_driver_memory            = "4g"

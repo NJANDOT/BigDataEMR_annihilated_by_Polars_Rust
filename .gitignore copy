@@ -1,0 +1,11 @@
+/data
+csv*
+kaggle.json
+readparquet.py
+.terraform*
+*.pem
+*/certs/*
+*/build/*
+*.tfstate*
+*_WIN*
+*.pyc

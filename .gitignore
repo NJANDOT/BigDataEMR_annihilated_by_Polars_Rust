@@ -144,6 +144,18 @@ ENV/
 env.bak/
 venv.bak/
 
+# Terraform
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+terraform/*.tfvars
+!terraform/terraform.tfvars.example
+
+# AWS logs
+aws_commands_history.log
+
 # Spyder project settings
 .spyderproject
 .spyproject

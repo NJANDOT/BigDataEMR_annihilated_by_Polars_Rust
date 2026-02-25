@@ -1,0 +1,30 @@
+# Stage 1: Builder - Compile Rust application
+FROM rust:latest AS builder
+
+WORKDIR /app
+
+# Copy dependency manifests first for better layer caching
+COPY Cargo.toml Cargo.lock ./
+
+# Copy source code
+COPY src ./src
+
+# Build release binary with optimizations
+RUN cargo build --release
+
+# Stage 2: Runtime - Minimal Debian image
+FROM debian:sid-slim
+
+# Install ca-certificates for HTTPS connections to AWS and Kaggle
+RUN apt-get update && \
+    apt-get install -y ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled binary from builder stage
+COPY --from=builder /app/target/release/kaggle-s3-uploader /usr/local/bin/kaggle-s3-uploader
+
+# Set executable permissions
+RUN chmod +x /usr/local/bin/kaggle-s3-uploader
+
+# Run the binary
+CMD ["kaggle-s3-uploader"]

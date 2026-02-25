@@ -1,0 +1,115 @@
+name: Manage bucket & upload script
+
+on:
+  push:
+    branches: [ "main", "developpement" ]
+
+  workflow_dispatch:
+
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  BUCKET_NAME: sparkresultsjjj${{ github.ref_name }}
+  AWS_REGION: eu-west-3
+
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-spark
+      - name: Download Spark
+        run: |
+          wget https://archive.apache.org/dist/spark/spark-3.5.3/spark-3.5.3-bin-hadoop3.tgz
+          tar xvf spark-3.5.3-bin-hadoop3.tgz
+          mv spark-3.5.3-bin-hadoop3 spark
+      - name: Set Spark env
+        run: |
+          echo "SPARK_HOME=$(pwd)/spark" >> $GITHUB_ENV
+          echo "$(pwd)/spark/bin" >> $GITHUB_PATH
+          echo "$(pwd)/spark/python" >> PYTHONPATH
+          echo "$(pwd)/spark/python/lib/py4j-0.10.9.7-src.zip" >> PYTHONPATH
+      - name: Run tests
+        run: pytest code/test_clean_df.py 
+
+  create-bucket:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ env.AWS_REGION }}"
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}  # this will be the ARN of the role you created in the "Creating a Role for deployment" step.
+          role-session-name: GithubActions-S3
+          mask-aws-account-id: true
+      - name: Create bucket if not exists
+
+        env:
+          BUCKET_POLICY: |
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "AllowEMRAccess",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "AWS": "arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}"
+                  },
+                  "Action": ["s3:GetObject","s3:PutObject","s3:ListBucket"],
+                  "Resource": [
+                    "arn:aws:s3:::${{ env.BUCKET_NAME }}",
+                    "arn:aws:s3:::${{ env.BUCKET_NAME }}/*"
+                  ]
+                }
+              ]
+            }
+
+        run: |   
+
+
+          if aws s3api head-bucket --bucket "${{ env.BUCKET_NAME}}" 2>/dev/null; then
+            echo "Bucket exists"
+          else
+            set -euo pipefail
+            trap 'echo "Erreur détectée, suppression du bucket…"; aws s3api delete-bucket --bucket "${BUCKET_NAME}" --region "${AWS_REGION}"; exit 1' ERR
+
+
+            aws s3api create-bucket --bucket "${{ env.BUCKET_NAME }}" --region "${{ env.AWS_REGION }}" \
+            --create-bucket-configuration LocationConstraint="${{ env.AWS_REGION }}"
+            aws s3api put-bucket-policy --bucket "${{ env.BUCKET_NAME }}" --policy "${BUCKET_POLICY}"
+            trap - ERR
+          fi
+
+
+  upload-script:
+    runs-on: ubuntu-latest
+    needs: create-bucket
+    steps:
+      - uses: actions/checkout@v3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ env.AWS_REGION }}"
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}  # this will be the ARN of the role you created in the "Creating a Role for deployment" step.
+          role-session-name: GithubActions-S3
+          mask-aws-account-id: true
+      - name: Upload script to S3
+        run: |
+          echo "Upload script.py & install_python_libs.sh to the bucket/src"
+          aws s3 cp code/install_python_libs.sh s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
+          aws s3 cp code/script.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
+          aws s3 cp code/bronze_to_silver.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
+          aws s3 cp code/transform_df.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
+
