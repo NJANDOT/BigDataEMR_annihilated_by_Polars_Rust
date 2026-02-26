@@ -31,14 +31,12 @@
 # kms_deletion_window_days = 7
 # kms_key_id = null  # Laissez null pour créer une nouvelle clé, ou spécifiez l'ID d'une clé existante
 
-# EMR Serverless Configuration
-# emr_release_label = "emr-7.1.0"
-# emr_max_cpu       = "96 vCPU"
-# emr_max_memory    = "384 GB"
-# emr_max_disk      = "2000 GB"
-
-# Spark Configuration
-# spark_executor_cores           = "4"
-# spark_executor_memory          = "24g"
-# spark_executor_memory_overhead = "6g"
-# spark_driver_memory            = "4g"
+# ECS Task Resource Variables for Fargate Migration
+# kaggle_task_cpu                    = "2048"   # 2 vCPU
+# kaggle_task_memory                 = "4096"   # 4 GB
+# bronze_silver_task_cpu             = "4096"   # 4 vCPU
+# bronze_silver_task_memory          = "16384"  # 16 GB
+# bronze_silver_ephemeral_storage_gb = 100
+# silver_gold_task_cpu               = "8192"   # 8 vCPU
+# silver_gold_task_memory            = "32768"  # 32 GB
+# silver_gold_ephemeral_storage_gb   = 200

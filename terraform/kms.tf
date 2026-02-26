@@ -28,22 +28,6 @@ resource "aws_kms_key" "emrb" {
       "Resource": "*"
     },
     {
-      "Sid": "AllowEMRServicePrincipal",
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "elasticmapreduce.amazonaws.com"
-      },
-      "Action": [
-        "kms:Encrypt",
-        "kms:Decrypt",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey",
-        "kms:CreateGrant"
-      ],
-      "Resource": "*"
-    },
-    {
       "Sid": "AllowEcsTaskRoleToUseKey",
       "Effect": "Allow",
       "Principal": {
@@ -52,22 +36,6 @@ resource "aws_kms_key" "emrb" {
       "Action": [
         "kms:Decrypt",
         "kms:DescribeKey"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowEMRServiceRoleUsage",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "${aws_iam_role.emr_serverless_job_role.arn}"
-      },
-      "Action": [
-        "kms:Encrypt",
-        "kms:Decrypt",
-        "kms:ReEncrypt*",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey",
-        "kms:CreateGrant"
       ],
       "Resource": "*"
     },
@@ -82,19 +50,6 @@ resource "aws_kms_key" "emrb" {
         "kms:Decrypt",
         "kms:ReEncrypt*",
         "kms:GenerateDataKey*"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "AllowEmrServerlessJobRole",
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "${aws_iam_role.emr_serverless_job_role.arn}"
-      },
-      "Action": [
-        "kms:Decrypt",
-        "kms:GenerateDataKey",
-        "kms:DescribeKey"
       ],
       "Resource": "*"
     }

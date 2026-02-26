@@ -22,12 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
-      - name: Run tests
-        run: pytest code/test_clean_df.py 
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install polars s3fs pyarrow numpy pytest hypothesis
+      - name: Run unit tests
+        run: pytest code/test_*.py -v
+      - name: Run property tests
+        run: pytest code/test_properties.py -v --hypothesis-show-statistics 
 
   create-bucket:
     runs-on: ubuntu-latest
@@ -79,24 +84,58 @@ jobs:
           fi
 
 
-  upload-script:
+  build-and-push-bronze-silver:
     runs-on: ubuntu-latest
-    needs: create-bucket
+    needs: test
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: "${{ env.AWS_REGION }}"
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}  # this will be the ARN of the role you created in the "Creating a Role for deployment" step.
-          role-session-name: GithubActions-S3
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}
+          role-session-name: GithubActions-ECR
           mask-aws-account-id: true
-      - name: Upload script to S3
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push Bronze-to-Silver processor
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: emr_fine
+          IMAGE_TAG: bronze-silver-${{ github.sha }}
         run: |
-          echo "Upload script.py & install_python_libs.sh to the bucket/src"
-          aws s3 cp code/install_python_libs.sh s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
-          aws s3 cp code/silver_to_gold.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
-          aws s3 cp code/bronze_to_silver.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
-          aws s3 cp code/consts_proj.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
-          aws s3 cp code/transform_df.py s3://${{ env.BUCKET_NAME}}/src/ --region ${{ env.AWS_REGION }}
+          cd code
+          docker build -f Dockerfile.bronze-silver -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:bronze-silver-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:bronze-silver-latest
 
+
+
+  build-and-push-silver-gold:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: "${{ env.AWS_REGION }}"
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.AWS_ROLE }}
+          role-session-name: GithubActions-ECR
+          mask-aws-account-id: true
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push Silver-to-Gold processor
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: emr_fine
+          IMAGE_TAG: silver-gold-${{ github.sha }}
+        run: |
+          cd code
+          docker build -f Dockerfile.silver-gold -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:silver-gold-latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:silver-gold-latest

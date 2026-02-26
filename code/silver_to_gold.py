@@ -16,13 +16,13 @@ if __name__ == "__main__":
     if fs.exists(consts_proj.BUCKET_GOLD_TGT):
         fs.rm(consts_proj.BUCKET_GOLD_TGT, recursive=True)
 
-    df = pl.read_parquet(consts_proj.BUCKET_SILVER_TGT).collect()
+    df = pl.read_parquet(consts_proj.BUCKET_SILVER_TGT)
     df = transform_df(df)
 
     taille_totale_mb = df.estimated_size("mb")
 
     # 500 Mo en RAM = ~128Mo en disque
-    nb_partitions = max(1, int(taille_totale_gb / 500))
+    nb_partitions = max(1, int(taille_totale_mb / 500))
 
     df = df.with_columns(
         _partition_idx = (pl.arange(0, pl.count()) % nb_partitions)

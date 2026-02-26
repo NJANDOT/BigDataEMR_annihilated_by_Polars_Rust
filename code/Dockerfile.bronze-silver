@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir polars s3fs pyarrow
+
+COPY bronze_to_silver.py consts_proj.py ./
+
+CMD ["python", "bronze_to_silver.py"]

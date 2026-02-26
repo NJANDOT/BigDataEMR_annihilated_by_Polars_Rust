@@ -1,0 +1,9 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir polars s3fs pyarrow numpy
+
+COPY silver_to_gold.py consts_proj.py ./
+
+CMD ["python", "silver_to_gold.py"]

@@ -88,66 +88,6 @@ variable "kms_deletion_window_days" {
   default     = 7
 }
 
-variable "emr_release_label" {
-  type        = string
-  description = "EMR release version"
-  default     = "emr-7.1.0"
-}
-
-variable "emr_max_cpu" {
-  type        = string
-  description = "Maximum CPU for EMR Serverless"
-  default     = "96 vCPU"
-}
-
-variable "emr_max_memory" {
-  type        = string
-  description = "Maximum memory for EMR Serverless"
-  default     = "384 GB"
-}
-
-variable "emr_max_disk" {
-  type        = string
-  description = "Maximum disk for EMR Serverless"
-  default     = "2000 GB"
-}
-
-variable "s3_scripts_prefix" {
-  type        = string
-  description = "S3 prefix for scripts"
-  default     = "src"
-}
-
-variable "s3_logs_prefix" {
-  type        = string
-  description = "S3 prefix for logs"
-  default     = "logs"
-}
-
-variable "spark_executor_cores" {
-  type        = string
-  description = "Spark executor cores"
-  default     = "4"
-}
-
-variable "spark_executor_memory" {
-  type        = string
-  description = "Spark executor memory"
-  default     = "24g"
-}
-
-variable "spark_executor_memory_overhead" {
-  type        = string
-  description = "Spark executor memory overhead"
-  default     = "6g"
-}
-
-variable "spark_driver_memory" {
-  type        = string
-  description = "Spark driver memory"
-  default     = "4g"
-}
-
 variable "environment" {
   type        = string
   description = "Environment name (dev, staging, prod)"
@@ -158,4 +98,54 @@ variable "kms_key_id" {
   type        = string
   description = "Existing KMS key ID to import (optional). If not provided, a new key will be created."
   default     = null
+}
+
+# ECS Task Resource Variables for Fargate Migration
+
+variable "kaggle_task_cpu" {
+  type        = string
+  description = "CPU units for Kaggle downloader task (1 vCPU = 1024)"
+  default     = "2048"
+}
+
+variable "kaggle_task_memory" {
+  type        = string
+  description = "Memory for Kaggle downloader task in MB"
+  default     = "4096"
+}
+
+variable "bronze_silver_task_cpu" {
+  type        = string
+  description = "CPU units for Bronze-to-Silver task (1 vCPU = 1024)"
+  default     = "4096"
+}
+
+variable "bronze_silver_task_memory" {
+  type        = string
+  description = "Memory for Bronze-to-Silver task in MB"
+  default     = "16384"
+}
+
+variable "bronze_silver_ephemeral_storage_gb" {
+  type        = number
+  description = "Ephemeral storage for Bronze-to-Silver task in GB"
+  default     = 100
+}
+
+variable "silver_gold_task_cpu" {
+  type        = string
+  description = "CPU units for Silver-to-Gold task (1 vCPU = 1024)"
+  default     = "8192"
+}
+
+variable "silver_gold_task_memory" {
+  type        = string
+  description = "Memory for Silver-to-Gold task in MB"
+  default     = "32768"
+}
+
+variable "silver_gold_ephemeral_storage_gb" {
+  type        = number
+  description = "Ephemeral storage for Silver-to-Gold task in GB"
+  default     = 200
 }
